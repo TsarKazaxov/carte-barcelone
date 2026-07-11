@@ -264,8 +264,8 @@
    CONFIGURATION SUPABASE — à remplir (voir guide)
    Laisser vide = mode local (test sur un seul appareil)
 ===================================================== */
-var SUPABASE_URL = '';        // ex : 'https://xxxx.supabase.co'
-var SUPABASE_ANON_KEY = '';   // ex : 'eyJhbGciOi...'
+var SUPABASE_URL = 'https://kjhbghykjjxxmxenijwd.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_id84bvu-62CcW9V0Lg7w9Q_7lNGUniF';
 var BUCKET = 'media';
 var TABLE = 'contributions';
 
@@ -313,7 +313,10 @@ function fileKind(f){
 
 /* ============ API Supabase (REST, sans librairie) ============ */
 function sbHeaders(extra){
-  var h = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY };
+  var h = { apikey: SUPABASE_ANON_KEY };
+  // Les anciennes clés (JWT « eyJ... ») exigent aussi un Authorization Bearer ;
+  // les nouvelles clés « sb_publishable_... » s'utilisent seules.
+  if(SUPABASE_ANON_KEY.indexOf('sb_') !== 0) h.Authorization = 'Bearer ' + SUPABASE_ANON_KEY;
   if(extra) for(var k in extra) h[k] = extra[k];
   return h;
 }
