@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carte collective · Barcelone 🎉</title>
+<style>
+  :root{
+    --blue:#1273b8; --teal:#18a999; --yellow:#ffc93c;
+    --orange:#e4572e; --pink:#ef6da0; --night1:#2a1a5e; --night2:#0e4a86;
+    --card-w:min(46vh,420px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:linear-gradient(160deg,var(--night1) 0%,var(--night2) 60%,#0d6a94 100%);
+    color:#fff; overflow-x:hidden; min-height:100%;
+  }
+  .hidden{display:none !important}
+  button{font-family:inherit;cursor:pointer;border:none}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+
+  .skyline{position:fixed;left:0;right:0;bottom:0;pointer-events:none;opacity:.35;z-index:0}
+  .skyline svg{display:block;width:100%;height:22vh;min-height:120px}
+
+  main{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:36px 20px 26vh}
+  h1{
+    font-size:clamp(1.9rem,5.5vw,3rem);font-weight:900;line-height:1.15;text-align:center;
+    background:linear-gradient(90deg,var(--yellow),var(--pink),var(--teal),var(--yellow));
+    background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shimmer 6s linear infinite;
+  }
+  @keyframes shimmer{to{background-position:300% 0}}
+  .sub{text-align:center;margin:10px 0 26px;color:#cfe6ff;font-size:1.05rem}
+
+  .panel{
+    background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.18);
+    border-radius:24px;padding:22px;margin-bottom:18px;
+  }
+  .panel h2{font-size:1.1rem;margin-bottom:12px;color:#ffe9a8}
+
+  label{font-weight:700;font-size:.95rem;color:#cfe6ff;display:block;margin-bottom:6px}
+  input[type=text]{
+    width:100%;padding:14px 16px;border-radius:14px;border:2px solid rgba(255,255,255,.3);
+    background:rgba(255,255,255,.1);color:#fff;font-size:1.05rem;
+  }
+  input::placeholder{color:#8fb4dd}
+  .count{font-size:.8rem;color:#9fc3e8;text-align:right;margin-top:4px}
+  .gap{margin-top:16px}
+
+  #dropzone{
+    border:3px dashed rgba(255,255,255,.45);border-radius:20px;padding:26px 16px;
+    text-align:center;background:rgba(255,255,255,.05);transition:.25s;cursor:pointer;
+  }
+  #dropzone:hover,#dropzone.drag{background:rgba(255,201,60,.14);border-color:var(--yellow)}
+  #dropzone .big{font-size:2rem}
+  #dropzone p{margin-top:6px;color:#e8f2ff}
+  #dropzone small{color:#9fc3e8}
+  #mediaPreview{margin-top:14px;display:flex;justify-content:center}
+  #mediaPreview .pv{
+    position:relative;width:150px;aspect-ratio:1;border-radius:14px;overflow:hidden;
+    border:3px solid rgba(255,255,255,.85);box-shadow:0 6px 18px rgba(0,0,0,.35);background:#000;
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes pop{from{transform:scale(.5);opacity:0}}
+  #mediaPreview img,#mediaPreview video{width:100%;height:100%;object-fit:cover;display:block}
+  #mediaPreview .badge{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);border-radius:8px;padding:2px 6px;font-size:.8rem}
+
+  .ctaRow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:22px}
+  .cta{
+    padding:15px 30px;border-radius:999px;font-size:1.1rem;font-weight:900;color:#3a1d00;
+    background:linear-gradient(90deg,var(--yellow),#ff9f45);box-shadow:0 8px 24px rgba(255,160,60,.4);transition:.2s;
+  }
+  .cta:hover:not(:disabled){transform:scale(1.05)}
+  .cta:disabled{opacity:.45;cursor:not-allowed}
+  .ghost{
+    padding:15px 24px;border-radius:999px;font-size:1rem;font-weight:700;color:#fff;
+    background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);transition:.2s;
+  }
+  .ghost:hover{background:rgba(255,255,255,.22)}
+
+  .linkBar{display:flex;gap:8px;align-items:center}
+  .linkBar input{flex:1;font-size:.9rem;padding:12px}
+  .modeTag{
+    display:inline-block;margin:0 auto 14px;padding:6px 16px;border-radius:999px;
+    font-size:.85rem;font-weight:700;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);
+  }
+  .modeTag.cloud{background:rgba(24,169,153,.25);border-color:var(--teal)}
+  .center{text-align:center}
+
+  #localList{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px}
+  .contribCard{
+    background:rgba(0,0,0,.25);border-radius:14px;overflow:hidden;border:2px solid rgba(255,255,255,.25);
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  .contribCard .media{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#000}
+  .contribCard .meta{padding:8px 10px;font-size:.82rem;line-height:1.35}
+  .contribCard .meta strong{color:var(--yellow)}
+  .contribCard .del{width:100%;background:rgba(228,87,46,.25);color:#ffd9cc;padding:6px;font-size:.8rem}
+  .contribCard .del:hover{background:rgba(228,87,46,.5)}
+
+  #toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);
+    background:var(--orange);color:#fff;font-weight:700;padding:12px 22px;border-radius:999px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);transition:transform .35s;z-index:99;max-width:90vw;text-align:center;
+  }
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast.ok{background:var(--teal)}
+
+  /* ---------- Lecteur ---------- */
+  #player{position:fixed;inset:0;z-index:10;background:linear-gradient(160deg,var(--night1),var(--night2) 70%,#0d6a94)}
+  #confettiCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #stage{position:absolute;inset:0;perspective:1200px;overflow:hidden}
+  .card{
+    position:absolute;top:42%;left:50%;width:var(--card-w);aspect-ratio:4/5;
+    border-radius:22px;overflow:hidden;background:#000;
+    border:5px solid rgba(255,255,255,.92);box-shadow:0 20px 60px rgba(0,0,0,.55);
+    transition:transform .6s cubic-bezier(.22,1,.36,1),filter .6s,opacity .6s;
+    will-change:transform,filter;cursor:pointer;
+  }
+  .card img,.card video{width:100%;height:100%;object-fit:cover;display:block}
+
+  .navBtn{
+    position:absolute;top:42%;transform:translateY(-50%);z-index:50;
+    width:58px;height:58px;border-radius:50%;font-size:1.6rem;color:#3a1d00;
+    background:var(--yellow);box-shadow:0 6px 18px rgba(0,0,0,.4);
+  }
+  .navBtn:hover{transform:translateY(-50%) scale(1.12)}
+  #prevBtn{left:3vw} #nextBtn{right:3vw}
+
+  #banner{position:absolute;left:0;right:0;bottom:7vh;text-align:center;z-index:60;padding:0 16px;pointer-events:none}
+  #msgText{
+    font-size:clamp(1.3rem,4vw,2.4rem);font-weight:900;line-height:1.25;
+    text-shadow:0 4px 18px rgba(0,0,0,.5);min-height:1.3em;
+  }
+  #msgText span{
+    display:inline-block;opacity:0;transform:translateY(18px);
+    animation:letterIn .45s forwards;
+    background:linear-gradient(90deg,var(--yellow),var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  @keyframes letterIn{to{opacity:1;transform:translateY(0)}}
+  #msgAuthor{margin-top:8px;font-size:1.05rem;color:#ffe9a8;font-style:italic}
+  #slideDots{margin-top:12px;font-size:.85rem;color:#9fc3e8;letter-spacing:2px}
+
+  #playerControls{position:absolute;top:18px;right:18px;display:flex;gap:10px;z-index:70}
+  #playerControls button{
+    width:48px;height:48px;border-radius:50%;font-size:1.15rem;color:#fff;
+    background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.5);
+  }
+  #playerControls button:hover{background:rgba(0,0,0,.7)}
+  #player.idle #playerControls,#player.idle .navBtn{opacity:0;pointer-events:none}
+  #playerControls,.navBtn{transition:opacity .4s,transform .2s}
+
+  @media (max-width:640px){
+    :root{--card-w:66vw}
+    #prevBtn{left:2vw} #nextBtn{right:2vw}
+    .navBtn{width:48px;height:48px;font-size:1.3rem}
+    #banner{bottom:5vh}
+  }
+</style>
+</head>
+<body>
+
+<div class="skyline" aria-hidden="true">
+  <svg viewBox="0 0 1200 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#000" d="M0,200 L0,150 L40,150 L40,120 L60,120 L60,150 L110,150 L110,100 L130,100 L130,150 L180,150 L180,130 L230,130 L230,150 L280,150
+      L285,90 L290,60 L295,40 L300,25 L305,40 L310,60 L315,90 L320,150
+      L340,150 L345,70 L350,35 L355,15 L360,35 L365,70 L370,150
+      L390,150 L395,90 L400,60 L405,40 L410,25 L415,40 L420,60 L425,90 L430,150
+      L480,150 L480,110 L520,110 L520,150 L570,150 L570,95 L590,95 L590,150
+      L640,150 L645,125 L650,110 L655,125 L660,150
+      L720,150 L720,105 L760,105 L760,150 L820,150 L820,130 L870,130 L870,150
+      L910,150 L915,80 L920,50 L925,30 L930,50 L935,80 L940,150
+      L990,150 L990,120 L1030,120 L1030,150 L1080,150 L1080,100 L1100,100 L1100,150 L1160,150 L1160,135 L1200,135 L1200,200 Z"/>
+  </svg>
+</div>
+
+<!-- ============ ACCUEIL (mode cloud, sans carte) ============ -->
+<main id="home" class="hidden">
+  <h1>Carte collective de Barcelone 🎉</h1>
+  <p class="sub">Crée une carte, partage le lien : chacun ajoute sa photo et son message, où qu'il soit dans le monde 🌍</p>
+  <div class="center">
+    <button class="cta" id="createCardBtn">Créer une nouvelle carte ✨</button>
+  </div>
+</main>
+
+<!-- ============ CONTRIBUTION ============ -->
+<main id="contrib" class="hidden">
+  <h1>Ajoute ton souvenir 🎉</h1>
+  <p class="sub center"><span class="modeTag" id="modeTag">Mode local</span></p>
+
+  <div class="panel hidden" id="sharePanel">
+    <h2>🔗 Lien de la carte — envoie-le aux autres !</h2>
+    <div class="linkBar">
+      <input type="text" id="shareLink" readonly aria-label="Lien de partage de la carte">
+      <button class="ghost" id="copyBtn">Copier 📋</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>✍️ Ta contribution — 1 photo/vidéo = 1 message</h2>
+    <label for="nameInput">Ton prénom</label>
+    <input type="text" id="nameInput" maxlength="40" placeholder="Anton">
+
+    <div class="gap">
+      <label>Ta photo ou ta mini-vidéo (5&nbsp;s)</label>
+      <div id="dropzone" role="button" tabindex="0" aria-label="Ajouter une photo ou une vidéo">
+        <div class="big">📸 🎬</div>
+        <p><strong>Glisse ton fichier ici</strong> ou clique pour choisir</p>
+        <small>Les vidéos jouent en boucle sur leurs 5 premières secondes, sans le son</small>
+      </div>
+      <input type="file" id="fileInput" accept="image/*,video/*" hidden>
+      <div id="mediaPreview" aria-live="polite"></div>
+    </div>
+
+    <div class="gap">
+      <label for="msgInput">Ton message pour cette photo</label>
+      <input type="text" id="msgInput" maxlength="90" placeholder="¡Feliz cumpleaños! ☀️">
+      <div class="count"><span id="msgCount">0</span>/90</div>
+    </div>
+
+    <div class="ctaRow">
+      <button class="cta" id="submitBtn" disabled>Ajouter à la carte 🎁</button>
+    </div>
+  </div>
+
+  <div class="panel" id="localPanel">
+    <h2>🖼️ Contributions sur cette carte</h2>
+    <p id="emptyHint" style="color:#9fc3e8">Aucune contribution pour l'instant — sois la première personne&nbsp;!</p>
+    <div id="localList"></div>
+  </div>
+
+  <div class="ctaRow">
+    <button class="cta" id="viewBtn">Voir la carte 🎬</button>
+    <button class="ghost" id="demoBtn">Voir une démo 🏖️</button>
+  </div>
+</main>
+
+<!-- ============ LECTEUR ============ -->
+<div id="player" class="hidden">
+  <canvas id="confettiCanvas" aria-hidden="true"></canvas>
+  <div id="stage"></div>
+  <button class="navBtn" id="prevBtn" aria-label="Souvenir précédent">‹</button>
+  <button class="navBtn" id="nextBtn" aria-label="Souvenir suivant">›</button>
+  <div id="banner">
+    <div id="msgText"></div>
+    <div id="msgAuthor"></div>
+    <div id="slideDots"></div>
+  </div>
+  <div id="playerControls">
+    <button id="pauseBtn" aria-label="Mettre en pause">⏸</button>
+    <button id="exitBtn" aria-label="Quitter la carte">✕</button>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+
+/* =====================================================
+   CONFIGURATION SUPABASE — à remplir (voir guide)
+   Laisser vide = mode local (test sur un seul appareil)
+===================================================== */
+var SUPABASE_URL = '';        // ex : 'https://xxxx.supabase.co'
+var SUPABASE_ANON_KEY = '';   // ex : 'eyJhbGciOi...'
+var BUCKET = 'media';
+var TABLE = 'contributions';
+
+var CLOUD = /^https:\/\//.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 20;
+var VIDEO_CAP = 5, SLIDE_MS = 5000, POLL_MS = 12000;
+
+/* ============ État ============ */
+var cardId = null;
+var contributions = [];   // {type,url,message,name,isDemo,localFile?}
+var pendingFile = null;   // {file,type,url}
+var current = 0, autoTimer = null, playing = true, idleTimer = null;
+var confettiRAF = null, pollTimer = null;
+var playlist = [], cards = [];
+
+/* ============ DOM ============ */
+function $(id){ return document.getElementById(id); }
+var home = $('home'), contrib = $('contrib'), player = $('player'), stage = $('stage');
+var dropzone = $('dropzone'), fileInput = $('fileInput'), mediaPreview = $('mediaPreview');
+var nameInput = $('nameInput'), msgInput = $('msgInput'), msgCount = $('msgCount');
+var submitBtn = $('submitBtn'), viewBtn = $('viewBtn'), demoBtn = $('demoBtn');
+var localList = $('localList'), emptyHint = $('emptyHint');
+var prevBtn = $('prevBtn'), nextBtn = $('nextBtn'), pauseBtn = $('pauseBtn'), exitBtn = $('exitBtn');
+var toastEl = $('toast'), toastTimer = null;
+
+/* ============ Utilitaires ============ */
+function toast(msg, ok){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('ok', !!ok);
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2800);
+}
+function uuid(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+    var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+function fileKind(f){
+  if(f.type.indexOf('image/') === 0) return 'image';
+  if(f.type.indexOf('video/') === 0) return 'video';
+  return null;
+}
+
+/* ============ API Supabase (REST, sans librairie) ============ */
+function sbHeaders(extra){
+  var h = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY };
+  if(extra) for(var k in extra) h[k] = extra[k];
+  return h;
+}
+function sbUpload(path, file){
+  return fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
+    method: 'POST',
+    headers: sbHeaders({ 'Content-Type': file.type || 'application/octet-stream' }),
+    body: file
+  }).then(function(r){ if(!r.ok) throw new Error('upload ' + r.status); return path; });
+}
+function sbPublicUrl(path){
+  return SUPABASE_URL + '/storage/v1/object/public/' + BUCKET + '/' + path;
+}
+function sbInsert(row){
+  return fetch(SUPABASE_URL + '/rest/v1/' + TABLE, {
+    method: 'POST',
+    headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+    body: JSON.stringify(row)
+  }).then(function(r){ if(!r.ok) throw new Error('insert ' + r.status); });
+}
+function sbList(cid){
+  return fetch(SUPABASE_URL + '/rest/v1/' + TABLE +
+    '?card_id=eq.' + encodeURIComponent(cid) + '&order=created_at.asc&select=*',
+    { headers: sbHeaders() })
+    .then(function(r){ if(!r.ok) throw new Error('list ' + r.status); return r.json(); });
+}
+
+/* ============ Routage initial ============ */
+function init(){
+  var params = new URLSearchParams(location.search);
+  var pCard = params.get('card');
+  $('modeTag').textContent = CLOUD ? '☁️ Carte partagée en ligne' : '💻 Mode local (Supabase non configuré)';
+  if(CLOUD) $('modeTag').classList.add('cloud');
+
+  if(CLOUD && !pCard){
+    home.classList.remove('hidden');
+  } else {
+    cardId = pCard || uuid();
+    openContrib();
+  }
+}
+function openContrib(){
+  home.classList.add('hidden');
+  contrib.classList.remove('hidden');
+  if(CLOUD){
+    $('sharePanel').classList.remove('hidden');
+    var link = location.origin + location.pathname + '?card=' + cardId;
+    $('shareLink').value = link;
+    refreshCloudList();
+  }
+}
+$('createCardBtn').addEventListener('click', function(){
+  cardId = uuid();
+  var url = location.pathname + '?card=' + cardId;
+  if(history.replaceState) history.replaceState(null, '', url);
+  openContrib();
+  toast('Carte créée ! Partage le lien 🔗', true);
+});
+$('copyBtn').addEventListener('click', function(){
+  var inp = $('shareLink');
+  inp.select();
+  var done = function(){ toast('Lien copié ! 📋', true); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(inp.value).then(done, function(){ document.execCommand('copy'); done(); });
+  } else { document.execCommand('copy'); done(); }
+});
+
+/* ============ Sélection du média ============ */
+function setPendingFile(f){
+  var kind = fileKind(f);
+  if(!kind){ toast('Photos et vidéos uniquement 🙈'); return; }
+  if(f.size > 45 * 1024 * 1024){ toast('Fichier trop lourd (max 45 Mo) 🐘'); return; }
+  if(pendingFile) URL.revokeObjectURL(pendingFile.url);
+  pendingFile = { file: f, type: kind, url: URL.createObjectURL(f) };
+  mediaPreview.innerHTML = '';
+  var pv = document.createElement('div');
+  pv.className = 'pv';
+  var el;
+  if(kind === 'image'){ el = document.createElement('img'); el.alt = 'Aperçu'; }
+  else {
+    el = document.createElement('video');
+    el.muted = true; el.playsInline = true; el.preload = 'metadata';
+    var b = document.createElement('div'); b.className = 'badge'; b.textContent = '🎬 5s';
+    pv.appendChild(b);
+  }
+  el.src = pendingFile.url;
+  pv.appendChild(el);
+  mediaPreview.appendChild(pv);
+  updateSubmit();
+}
+dropzone.addEventListener('click', function(){ fileInput.click(); });
+dropzone.addEventListener('keydown', function(e){
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fileInput.click(); }
+});
+fileInput.addEventListener('change', function(){
+  if(fileInput.files && fileInput.files[0]) setPendingFile(fileInput.files[0]);
+  fileInput.value = '';
+});
+['dragenter','dragover'].forEach(function(ev){
+  dropzone.addEventListener(ev, function(e){ e.preventDefault(); dropzone.classList.add('drag'); });
+});
+['dragleave','drop'].forEach(function(ev){
+  dropzone.addEventListener(ev, function(e){ e.preventDefault(); dropzone.classList.remove('drag'); });
+});
+dropzone.addEventListener('drop', function(e){
+  if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) setPendingFile(e.dataTransfer.files[0]);
+});
+
+function updateSubmit(){
+  submitBtn.disabled = !(pendingFile && nameInput.value.trim() && msgInput.value.trim());
+}
+nameInput.addEventListener('input', updateSubmit);
+msgInput.addEventListener('input', function(){
+  msgCount.textContent = String(msgInput.value.length);
+  updateSubmit();
+});
+
+/* ============ Envoi d'une contribution ============ */
+submitBtn.addEventListener('click', function(){
+  if(!pendingFile) return;
+  var entry = {
+    type: pendingFile.type,
+    message: msgInput.value.trim(),
+    name: nameInput.value.trim(),
+    isDemo: false
+  };
+  if(CLOUD){
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Envoi… ⏳';
+    var ext = (pendingFile.file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+    var path = cardId + '/' + uuid() + '.' + ext;
+    sbUpload(path, pendingFile.file)
+      .then(function(){
+        return sbInsert({
+          card_id: cardId, name: entry.name, message: entry.message,
+          media_path: path, media_type: entry.type
+        });
+      })
+      .then(function(){
+        toast('Ta contribution est sur la carte ! 🎉', true);
+        resetForm();
+        refreshCloudList();
+      })
+      .catch(function(){
+        toast('Oups, envoi impossible. Vérifie ta connexion 📡');
+      })
+      .then(function(){
+        submitBtn.textContent = 'Ajouter à la carte 🎁';
+        updateSubmit();
+      });
+  } else {
+    entry.url = pendingFile.url;   // on garde l'objectURL en local
+    pendingFile = null;            // ne pas révoquer : utilisé par la carte
+    contributions.push(entry);
+    toast('Ajouté à la carte ! 🎉', true);
+    resetForm();
+    renderLocalList();
+  }
+});
+
+function resetForm(){
+  if(pendingFile){ URL.revokeObjectURL(pendingFile.url); pendingFile = null; }
+  mediaPreview.innerHTML = '';
+  msgInput.value = '';
+  msgCount.textContent = '0';
+  updateSubmit();
+}
+
+/* ============ Liste des contributions ============ */
+function renderLocalList(){
+  localList.innerHTML = '';
+  emptyHint.classList.toggle('hidden', contributions.length > 0);
+  contributions.forEach(function(c, i){
+    var d = document.createElement('div');
+    d.className = 'contribCard';
+    var el;
+    if(c.type === 'image'){ el = document.createElement('img'); el.alt = 'Photo de ' + c.name; }
+    else { el = document.createElement('video'); el.muted = true; el.playsInline = true; el.preload = 'metadata'; }
+    el.className = 'media';
+    el.src = c.url;
+    d.appendChild(el);
+    var meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.innerHTML = '<strong></strong><br>';
+    meta.querySelector('strong').textContent = c.name;
+    meta.appendChild(document.createTextNode('« ' + c.message + ' »'));
+    d.appendChild(meta);
+    if(!CLOUD && !c.isDemo){
+      var del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = 'Supprimer 🗑';
+      del.setAttribute('aria-label', 'Supprimer la contribution de ' + c.name);
+      del.addEventListener('click', function(){
+        URL.revokeObjectURL(c.url);
+        contributions.splice(i, 1);
+        renderLocalList();
+      });
+      d.appendChild(del);
+    }
+    localList.appendChild(d);
+  });
+}
+
+function refreshCloudList(){
+  if(!CLOUD || !cardId) return;
+  sbList(cardId).then(function(rows){
+    contributions = rows.map(function(r){
+      return { type: r.media_type, url: sbPublicUrl(r.media_path), message: r.message, name: r.name, isDemo: false };
+    });
+    renderLocalList();
+  }).catch(function(){ /* silencieux : réessaiera */ });
+}
+
+/* ============ Slides démo ============ */
+function demoSlide(c1, c2, emoji, word){
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="600">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
+    '<rect width="480" height="600" fill="url(#g)"/>' +
+    '<circle cx="400" cy="90" r="46" fill="#ffc93c" opacity="0.9"/>' +
+    '<text x="240" y="300" font-size="120" text-anchor="middle">' + emoji + '</text>' +
+    '<text x="240" y="420" font-size="52" font-weight="bold" fill="#fff" text-anchor="middle" font-family="sans-serif">' + word + '</text>' +
+    '</svg>';
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+function loadDemo(){
+  return [
+    { type:'image', url: demoSlide('#1273b8','#18a999','🏖️','¡Hola!'),  message:'¡Hola desde la playa! ☀️', name:'Marta',  isDemo:true },
+    { type:'image', url: demoSlide('#e4572e','#ffc93c','⛪','Sagrada'),  message:'Pense fort à toi devant la Sagrada !', name:'Léo', isDemo:true },
+    { type:'image', url: demoSlide('#ef6da0','#e4572e','🥘','Paella'),   message:'On trinque à ta santé 🥂', name:'Nina',   isDemo:true },
+    { type:'image', url: demoSlide('#18a999','#1273b8','🌴','Rambla'),   message:'Feliz cumpleaños amigo ! 🎂', name:'Pablo', isDemo:true }
+  ];
+}
+
+/* ============ Lecteur coverflow ============ */
+function launch(list){
+  if(!list.length){ toast('Ajoute au moins une photo avant de lancer 😉'); return; }
+  playlist = list;
+  current = 0;
+  playing = true;
+  buildCards();
+  contrib.classList.add('hidden');
+  home.classList.add('hidden');
+  player.classList.remove('hidden');
+  applyTransforms();
+  updateBanner();
+  startAuto();
+  startConfetti();
+  wakeControls();
+  var single = playlist.length <= 1;
+  prevBtn.classList.toggle('hidden', single);
+  nextBtn.classList.toggle('hidden', single);
+  pauseBtn.textContent = '⏸';
+  pauseBtn.setAttribute('aria-label', 'Mettre en pause');
+  if(CLOUD && !list[0].isDemo){
+    pollTimer = setInterval(function(){
+      sbList(cardId).then(function(rows){
+        if(rows.length > playlist.length){
+          var keep = current;
+          playlist = rows.map(function(r){
+            return { type:r.media_type, url:sbPublicUrl(r.media_path), message:r.message, name:r.name, isDemo:false };
+          });
+          buildCards();
+          current = Math.min(keep, playlist.length - 1);
+          applyTransforms();
+          updateBanner();
+          toast('Nouveau souvenir reçu ! 💌', true);
+        }
+      }).catch(function(){});
+    }, POLL_MS);
+  }
+}
+
+function buildCards(){
+  stage.innerHTML = '';
+  cards = [];
+  playlist.forEach(function(m, i){
+    var card = document.createElement('div');
+    card.className = 'card';
+    var el;
+    if(m.type === 'image'){
+      el = document.createElement('img');
+      el.alt = 'Souvenir de ' + m.name;
+      el.src = m.url;
+    } else {
+      el = document.createElement('video');
+      el.muted = true; el.playsInline = true; el.loop = true; el.preload = 'auto';
+      el.src = m.url;
+      el.addEventListener('timeupdate', function(){
+        if(el.currentTime >= VIDEO_CAP) el.currentTime = 0;
+      });
+    }
+    card.appendChild(el);
+    card.addEventListener('click', function(){
+      if(i !== current){ goTo(i); resetAuto(); }
+    });
+    stage.appendChild(card);
+    cards.push({ root: card, el: el, type: m.type });
+  });
+}
+
+function circularOffset(i){
+  var n = playlist.length;
+  var d = i - current;
+  if(n > 1){
+    if(d > n / 2) d -= n;
+    if(d < -n / 2) d += n;
+  }
+  return d;
+}
+
+function applyTransforms(){
+  cards.forEach(function(c, i){
+    var d = circularOffset(i);
+    var abs = Math.abs(d);
+    var center = d === 0;
+    var rot = center ? 0 : (d < 0 ? 35 : -35);
+    var blur = Math.min(abs * 3, 7);
+    c.root.style.transform =
+      'translate(-50%,-50%) translateX(' + (d * 55) + '%) translateZ(' + (-abs * 220) + 'px)' +
+      ' rotateY(' + rot + 'deg) scale(' + (center ? 1 : 0.78) + ')';
+    c.root.style.filter = center ? 'none' : 'blur(' + blur + 'px) brightness(0.65)';
+    c.root.style.opacity = abs > 3 ? '0' : '1';
+    c.root.style.pointerEvents = abs > 3 ? 'none' : 'auto';
+    c.root.style.zIndex = String(100 - Math.round(abs));
+    if(c.type === 'video'){
+      if(center){
+        c.el.currentTime = 0;
+        var p = c.el.play();
+        if(p && p.catch) p.catch(function(){});
+      } else {
+        c.el.pause();
+      }
+    }
+  });
+}
+
+function updateBanner(){
+  var m = playlist[current];
+  if(!m) return;
+  var msgText = $('msgText');
+  msgText.innerHTML = '';
+  Array.prototype.forEach.call(m.message, function(ch, i){
+    var s = document.createElement('span');
+    s.textContent = ch === ' ' ? ' ' : ch;
+    s.style.animationDelay = (i * 0.03) + 's';
+    msgText.appendChild(s);
+  });
+  $('msgAuthor').textContent = m.name ? '— ' + m.name + ' 💛' : '';
+  var dots = '';
+  for(var i = 0; i < playlist.length; i++) dots += (i === current ? '●' : '○');
+  $('slideDots').textContent = playlist.length > 1 ? dots : '';
+}
+
+function goTo(i){
+  var n = playlist.length;
+  current = ((i % n) + n) % n;
+  applyTransforms();
+  updateBanner();
+}
+function next(){ goTo(current + 1); }
+function prev(){ goTo(current - 1); }
+
+function startAuto(){
+  stopAuto();
+  if(playlist.length > 1 && playing) autoTimer = setInterval(next, SLIDE_MS);
+}
+function stopAuto(){ if(autoTimer){ clearInterval(autoTimer); autoTimer = null; } }
+function resetAuto(){ startAuto(); }
+
+function togglePlay(){
+  playing = !playing;
+  pauseBtn.textContent = playing ? '⏸' : '▶';
+  pauseBtn.setAttribute('aria-label', playing ? 'Mettre en pause' : 'Reprendre la lecture');
+  if(playing) startAuto(); else stopAuto();
+}
+
+function exitPlayer(){
+  stopAuto();
+  stopConfetti();
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  cards.forEach(function(c){ if(c.type === 'video') c.el.pause(); });
+  stage.innerHTML = '';
+  cards = [];
+  player.classList.add('hidden');
+  contrib.classList.remove('hidden');
+}
+
+/* ---- Contrôles / inactivité ---- */
+function wakeControls(){
+  player.classList.remove('idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(function(){ player.classList.add('idle'); }, 3000);
+}
+player.addEventListener('mousemove', wakeControls);
+player.addEventListener('touchstart', wakeControls, { passive: true });
+
+prevBtn.addEventListener('click', function(){ prev(); resetAuto(); });
+nextBtn.addEventListener('click', function(){ next(); resetAuto(); });
+pauseBtn.addEventListener('click', togglePlay);
+exitBtn.addEventListener('click', exitPlayer);
+
+document.addEventListener('keydown', function(e){
+  if(player.classList.contains('hidden')) return;
+  if(e.key === 'ArrowRight'){ next(); resetAuto(); wakeControls(); }
+  else if(e.key === 'ArrowLeft'){ prev(); resetAuto(); wakeControls(); }
+  else if(e.key === ' '){ e.preventDefault(); togglePlay(); wakeControls(); }
+  else if(e.key === 'Escape'){ exitPlayer(); }
+});
+
+var touchX = null;
+stage.addEventListener('touchstart', function(e){
+  if(e.touches.length === 1) touchX = e.touches[0].clientX;
+}, { passive: true });
+stage.addEventListener('touchend', function(e){
+  if(touchX === null) return;
+  var dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if(Math.abs(dx) > 40){
+    if(dx < 0) next(); else prev();
+    resetAuto();
+  }
+}, { passive: true });
+
+viewBtn.addEventListener('click', function(){
+  if(CLOUD){
+    viewBtn.disabled = true;
+    sbList(cardId).then(function(rows){
+      contributions = rows.map(function(r){
+        return { type:r.media_type, url:sbPublicUrl(r.media_path), message:r.message, name:r.name, isDemo:false };
+      });
+      renderLocalList();
+      launch(contributions.slice());
+    }).catch(function(){
+      toast('Impossible de charger la carte 📡');
+    }).then(function(){ viewBtn.disabled = false; });
+  } else {
+    launch(contributions.slice());
+  }
+});
+demoBtn.addEventListener('click', function(){ launch(loadDemo()); });
+
+/* ============ Confettis ============ */
+var canvas = $('confettiCanvas');
+var ctx = canvas.getContext ? canvas.getContext('2d') : null;
+var particles = [];
+var COLORS = ['#1273b8','#18a999','#ffc93c','#e4572e','#ef6da0','#ffffff'];
+
+function resizeCanvas(){ canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
+window.addEventListener('resize', resizeCanvas);
+
+function makeParticle(fromTop){
+  return {
+    x: Math.random() * canvas.width,
+    y: fromTop ? -12 : Math.random() * canvas.height,
+    size: 5 + Math.random() * 7,
+    speed: 0.6 + Math.random() * 1.6,
+    drift: (Math.random() - 0.5) * 0.7,
+    rot: Math.random() * Math.PI,
+    rotSpeed: (Math.random() - 0.5) * 0.08,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)]
+  };
+}
+function startConfetti(){
+  if(!ctx) return;
+  resizeCanvas();
+  particles = [];
+  for(var i = 0; i < 70; i++) particles.push(makeParticle(false));
+  function tick(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(function(p, i){
+      p.y += p.speed; p.x += p.drift; p.rot += p.rotSpeed;
+      if(p.y > canvas.height + 14) particles[i] = makeParticle(true);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.globalAlpha = 0.85; ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      ctx.restore();
+    });
+    confettiRAF = requestAnimationFrame(tick);
+  }
+  tick();
+}
+function stopConfetti(){
+  if(confettiRAF){ cancelAnimationFrame(confettiRAF); confettiRAF = null; }
+  if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+init();
+</script>
+</body>
+</html>

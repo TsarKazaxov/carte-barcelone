@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carte de vœux · Barcelone 🎉</title>
+<style>
+  :root{
+    --blue:#1273b8; --teal:#18a999; --yellow:#ffc93c;
+    --orange:#e4572e; --pink:#ef6da0; --night1:#2a1a5e; --night2:#0e4a86;
+    --card-w:min(46vh,420px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:linear-gradient(160deg,var(--night1) 0%,var(--night2) 60%,#0d6a94 100%);
+    color:#fff; overflow-x:hidden; min-height:100%;
+  }
+  .hidden{display:none !important}
+  button{font-family:inherit;cursor:pointer;border:none}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+
+  /* ---------- Skyline ---------- */
+  .skyline{position:fixed;left:0;right:0;bottom:0;pointer-events:none;opacity:.35;z-index:0}
+  .skyline svg{display:block;width:100%;height:22vh;min-height:120px}
+
+  /* ---------- Éditeur ---------- */
+  #editor{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:40px 20px 26vh}
+  #editor h1{
+    font-size:clamp(2rem,5.5vw,3.2rem);font-weight:900;line-height:1.1;text-align:center;
+    background:linear-gradient(90deg,var(--yellow),var(--pink),var(--teal),var(--yellow));
+    background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shimmer 6s linear infinite;
+  }
+  @keyframes shimmer{to{background-position:300% 0}}
+  #editor .sub{text-align:center;margin:10px 0 28px;color:#cfe6ff;font-size:1.05rem}
+
+  #dropzone{
+    border:3px dashed rgba(255,255,255,.45);border-radius:24px;padding:38px 20px;
+    text-align:center;background:rgba(255,255,255,.07);transition:.25s;cursor:pointer;
+  }
+  #dropzone:hover,#dropzone.drag{background:rgba(255,201,60,.14);border-color:var(--yellow);transform:scale(1.01)}
+  #dropzone .big{font-size:2.4rem}
+  #dropzone p{margin-top:8px;color:#e8f2ff}
+  #dropzone small{color:#9fc3e8}
+
+  #thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;margin-top:20px}
+  .thumb{
+    position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1;
+    border:3px solid rgba(255,255,255,.85);box-shadow:0 6px 18px rgba(0,0,0,.35);
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);background:#000;
+  }
+  @keyframes pop{from{transform:scale(.5);opacity:0}}
+  .thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .badge{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);border-radius:8px;padding:2px 6px;font-size:.8rem}
+  .thumb .tools{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+  .thumb .tools button{background:none;color:#fff;font-size:1rem;padding:6px 9px;line-height:1}
+  .thumb .tools button:hover{color:var(--yellow)}
+
+  .fields{margin-top:26px;display:grid;gap:14px}
+  .fields label{font-weight:700;font-size:.95rem;color:#cfe6ff;display:block;margin-bottom:6px}
+  .fields input{
+    width:100%;padding:14px 16px;border-radius:14px;border:2px solid rgba(255,255,255,.3);
+    background:rgba(255,255,255,.1);color:#fff;font-size:1.05rem;
+  }
+  .fields input::placeholder{color:#8fb4dd}
+  .count{font-size:.8rem;color:#9fc3e8;text-align:right;margin-top:4px}
+
+  .ctaRow{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:30px}
+  .cta{
+    padding:16px 34px;border-radius:999px;font-size:1.15rem;font-weight:900;color:#3a1d00;
+    background:linear-gradient(90deg,var(--yellow),#ff9f45);box-shadow:0 8px 24px rgba(255,160,60,.4);
+    transition:.2s;
+  }
+  .cta:hover:not(:disabled){transform:scale(1.05)}
+  .cta:disabled{opacity:.45;cursor:not-allowed}
+  .ghost{
+    padding:16px 26px;border-radius:999px;font-size:1rem;font-weight:700;color:#fff;
+    background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);transition:.2s;
+  }
+  .ghost:hover{background:rgba(255,255,255,.22)}
+
+  #toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);
+    background:var(--orange);color:#fff;font-weight:700;padding:12px 22px;border-radius:999px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);transition:transform .35s;z-index:99;max-width:90vw;text-align:center;
+  }
+  #toast.show{transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Lecteur ---------- */
+  #player{position:fixed;inset:0;z-index:10;background:linear-gradient(160deg,var(--night1),var(--night2) 70%,#0d6a94)}
+  #confettiCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #stage{position:absolute;inset:0;perspective:1200px;overflow:hidden}
+  .card{
+    position:absolute;top:44%;left:50%;width:var(--card-w);aspect-ratio:4/5;
+    border-radius:22px;overflow:hidden;background:#000;
+    border:5px solid rgba(255,255,255,.92);box-shadow:0 20px 60px rgba(0,0,0,.55);
+    transition:transform .6s cubic-bezier(.22,1,.36,1),filter .6s,opacity .6s;
+    will-change:transform,filter;cursor:pointer;
+  }
+  .card img,.card video{width:100%;height:100%;object-fit:cover;display:block}
+
+  .navBtn{
+    position:absolute;top:44%;transform:translateY(-50%);z-index:50;
+    width:58px;height:58px;border-radius:50%;font-size:1.6rem;color:#3a1d00;
+    background:var(--yellow);box-shadow:0 6px 18px rgba(0,0,0,.4);transition:.2s;
+  }
+  .navBtn:hover{transform:translateY(-50%) scale(1.12)}
+  #prevBtn{left:3vw} #nextBtn{right:3vw}
+
+  #banner{position:absolute;left:0;right:0;bottom:9vh;text-align:center;z-index:60;padding:0 16px;pointer-events:none}
+  #msgText{
+    font-size:clamp(1.5rem,4.5vw,2.8rem);font-weight:900;line-height:1.2;
+    text-shadow:0 4px 18px rgba(0,0,0,.5);
+  }
+  #msgText span{
+    display:inline-block;opacity:0;transform:translateY(20px);
+    animation:letterIn .5s forwards;
+    background:linear-gradient(90deg,var(--yellow),var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  @keyframes letterIn{to{opacity:1;transform:translateY(0)}}
+  #msgText.pulse{animation:pulse 2.4s ease-in-out .5s infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+  #msgSender{margin-top:8px;font-size:1.1rem;color:#ffe9a8;font-style:italic;opacity:0;animation:letterIn .6s 1s forwards}
+
+  #playerControls{position:absolute;top:18px;right:18px;display:flex;gap:10px;z-index:70;transition:opacity .4s}
+  #playerControls button{
+    width:48px;height:48px;border-radius:50%;font-size:1.15rem;color:#fff;
+    background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.5);transition:.2s;
+  }
+  #playerControls button:hover{background:rgba(0,0,0,.7)}
+  #player.idle #playerControls,#player.idle .navBtn{opacity:0;pointer-events:none}
+  #playerControls,.navBtn{transition:opacity .4s,transform .2s}
+
+  @media (max-width:640px){
+    :root{--card-w:66vw}
+    #prevBtn{left:2vw} #nextBtn{right:2vw}
+    .navBtn{width:48px;height:48px;font-size:1.3rem}
+    #banner{bottom:6vh}
+  }
+</style>
+</head>
+<body>
+
+<div class="skyline" aria-hidden="true">
+  <svg viewBox="0 0 1200 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#000" d="M0,200 L0,150 L40,150 L40,120 L60,120 L60,150 L110,150 L110,100 L130,100 L130,150 L180,150 L180,130 L230,130 L230,150 L280,150
+      L285,90 L290,60 L295,40 L300,25 L305,40 L310,60 L315,90 L320,150
+      L340,150 L345,70 L350,35 L355,15 L360,35 L365,70 L370,150
+      L390,150 L395,90 L400,60 L405,40 L410,25 L415,40 L420,60 L425,90 L430,150
+      L480,150 L480,110 L520,110 L520,150 L570,150 L570,95 L590,95 L590,150
+      L640,150 L645,125 L650,110 L655,125 L660,150
+      L720,150 L720,105 L760,105 L760,150 L820,150 L820,130 L870,130 L870,150
+      L910,150 L915,80 L920,50 L925,30 L930,50 L935,80 L940,150
+      L990,150 L990,120 L1030,120 L1030,150 L1080,150 L1080,100 L1100,100 L1100,150 L1160,150 L1160,135 L1200,135 L1200,200 Z"/>
+  </svg>
+</div>
+
+<!-- ================= ÉCRAN 1 : ÉDITEUR ================= -->
+<main id="editor">
+  <h1>Ta carte de Barcelone&nbsp;🎉</h1>
+  <p class="sub">Ajoute tes photos et tes mini-vidéos (5&nbsp;s), écris ton message, et c'est parti&nbsp;!</p>
+
+  <div id="dropzone" role="button" tabindex="0" aria-label="Ajouter des photos ou des vidéos">
+    <div class="big">📸 🎬 ☀️</div>
+    <p><strong>Glisse tes photos / vidéos ici</strong> ou clique pour choisir</p>
+    <small>Les vidéos seront jouées en boucle sur leurs 5 premières secondes, sans le son</small>
+  </div>
+  <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+
+  <div id="thumbs" aria-live="polite"></div>
+
+  <div class="fields">
+    <div>
+      <label for="msgInput">Ton message ✍️</label>
+      <input id="msgInput" maxlength="90" placeholder="Bons baisers de Barcelone !">
+      <div class="count"><span id="msgCount">0</span>/90</div>
+    </div>
+    <div>
+      <label for="senderInput">De la part de… (optionnel)</label>
+      <input id="senderInput" maxlength="40" placeholder="Anton">
+    </div>
+  </div>
+
+  <div class="ctaRow">
+    <button class="cta" id="launchBtn" disabled>Lancer la carte ✨</button>
+    <button class="ghost" id="demoBtn">Voir une démo 🏖️</button>
+  </div>
+</main>
+
+<!-- ================= ÉCRAN 2 : LECTEUR ================= -->
+<div id="player" class="hidden">
+  <canvas id="confettiCanvas" aria-hidden="true"></canvas>
+  <div id="stage"></div>
+  <button class="navBtn" id="prevBtn" aria-label="Média précédent">‹</button>
+  <button class="navBtn" id="nextBtn" aria-label="Média suivant">›</button>
+  <div id="banner">
+    <div id="msgText"></div>
+    <div id="msgSender"></div>
+  </div>
+  <div id="playerControls">
+    <button id="pauseBtn" aria-label="Mettre en pause">⏸</button>
+    <button id="exitBtn" aria-label="Quitter la carte">✕</button>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+
+/* ============ État ============ */
+var media = [];          // {id, type:'image'|'video', url, isDemo}
+var nextId = 1;
+var current = 0;
+var autoTimer = null;
+var playing = true;
+var idleTimer = null;
+var confettiRAF = null;
+var VIDEO_CAP = 5;       // secondes
+var SLIDE_MS = 5000;
+
+/* ============ Raccourcis DOM ============ */
+function $(id){ return document.getElementById(id); }
+var editor = $('editor'), player = $('player'), stage = $('stage');
+var dropzone = $('dropzone'), fileInput = $('fileInput'), thumbs = $('thumbs');
+var launchBtn = $('launchBtn'), demoBtn = $('demoBtn');
+var msgInput = $('msgInput'), senderInput = $('senderInput'), msgCount = $('msgCount');
+var prevBtn = $('prevBtn'), nextBtn = $('nextBtn');
+var pauseBtn = $('pauseBtn'), exitBtn = $('exitBtn');
+var toastEl = $('toast'), toastTimer = null;
+
+/* ============ Toast ============ */
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2600);
+}
+
+/* ============ Upload ============ */
+function addFiles(fileList){
+  var added = 0, skipped = 0;
+  Array.prototype.forEach.call(fileList, function(f){
+    var type = f.type.indexOf('image/') === 0 ? 'image'
+             : f.type.indexOf('video/') === 0 ? 'video' : null;
+    if(!type){ skipped++; return; }
+    media.push({ id: nextId++, type: type, url: URL.createObjectURL(f), isDemo: false });
+    added++;
+  });
+  if(skipped) toast(skipped + ' fichier(s) ignoré(s) — photos et vidéos uniquement 🙈');
+  if(added) renderThumbs();
+}
+
+dropzone.addEventListener('click', function(){ fileInput.click(); });
+dropzone.addEventListener('keydown', function(e){
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fileInput.click(); }
+});
+fileInput.addEventListener('change', function(){
+  addFiles(fileInput.files);
+  fileInput.value = '';
+});
+['dragenter','dragover'].forEach(function(ev){
+  dropzone.addEventListener(ev, function(e){ e.preventDefault(); dropzone.classList.add('drag'); });
+});
+['dragleave','drop'].forEach(function(ev){
+  dropzone.addEventListener(ev, function(e){ e.preventDefault(); dropzone.classList.remove('drag'); });
+});
+dropzone.addEventListener('drop', function(e){
+  if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+});
+
+/* ============ Vignettes ============ */
+function renderThumbs(){
+  thumbs.innerHTML = '';
+  media.forEach(function(m, i){
+    var t = document.createElement('div');
+    t.className = 'thumb';
+
+    var el;
+    if(m.type === 'image'){
+      el = document.createElement('img');
+      el.alt = 'Photo ' + (i + 1);
+    } else {
+      el = document.createElement('video');
+      el.muted = true; el.playsInline = true; el.preload = 'metadata';
+      var badge = document.createElement('div');
+      badge.className = 'badge'; badge.textContent = '🎬 5s';
+      t.appendChild(badge);
+    }
+    el.src = m.url;
+    t.appendChild(el);
+
+    var tools = document.createElement('div');
+    tools.className = 'tools';
+    tools.appendChild(makeToolBtn('‹', 'Déplacer vers la gauche', function(){ moveMedia(i, -1); }));
+    tools.appendChild(makeToolBtn('🗑', 'Supprimer', function(){ removeMedia(i); }));
+    tools.appendChild(makeToolBtn('›', 'Déplacer vers la droite', function(){ moveMedia(i, 1); }));
+    t.appendChild(tools);
+    thumbs.appendChild(t);
+  });
+  launchBtn.disabled = media.length === 0;
+}
+
+function makeToolBtn(txt, label, fn){
+  var b = document.createElement('button');
+  b.textContent = txt;
+  b.setAttribute('aria-label', label);
+  b.addEventListener('click', function(e){ e.stopPropagation(); fn(); });
+  return b;
+}
+
+function moveMedia(i, dir){
+  var j = i + dir;
+  if(j < 0 || j >= media.length) return;
+  var tmp = media[i]; media[i] = media[j]; media[j] = tmp;
+  renderThumbs();
+}
+
+function removeMedia(i){
+  var m = media[i];
+  if(!m.isDemo) URL.revokeObjectURL(m.url);
+  media.splice(i, 1);
+  renderThumbs();
+}
+
+/* ============ Compteur message ============ */
+msgInput.addEventListener('input', function(){ msgCount.textContent = String(msgInput.value.length); });
+
+/* ============ Slides démo (SVG hors-ligne) ============ */
+function demoSlide(c1, c2, emoji, word){
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="600">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
+    '<rect width="480" height="600" fill="url(#g)"/>' +
+    '<circle cx="400" cy="90" r="46" fill="#ffc93c" opacity="0.9"/>' +
+    '<text x="240" y="300" font-size="120" text-anchor="middle">' + emoji + '</text>' +
+    '<text x="240" y="420" font-size="52" font-weight="bold" fill="#fff" text-anchor="middle" font-family="sans-serif">' + word + '</text>' +
+    '</svg>';
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function loadDemo(){
+  return [
+    { id: 'd1', type: 'image', url: demoSlide('#1273b8', '#18a999', '🏖️', '¡Hola!'), isDemo: true },
+    { id: 'd2', type: 'image', url: demoSlide('#e4572e', '#ffc93c', '⛪', 'Sagrada'), isDemo: true },
+    { id: 'd3', type: 'image', url: demoSlide('#ef6da0', '#e4572e', '🥘', 'Paella'), isDemo: true },
+    { id: 'd4', type: 'image', url: demoSlide('#18a999', '#1273b8', '🌴', 'Rambla'), isDemo: true }
+  ];
+}
+
+/* ============ Lecteur ============ */
+var playlist = [];
+var cards = [];
+
+function launch(list){
+  playlist = list;
+  current = 0;
+  playing = true;
+  buildCards();
+  buildMessage();
+  editor.classList.add('hidden');
+  player.classList.remove('hidden');
+  applyTransforms();
+  startAuto();
+  startConfetti();
+  wakeControls();
+  var single = playlist.length <= 1;
+  prevBtn.classList.toggle('hidden', single);
+  nextBtn.classList.toggle('hidden', single);
+  pauseBtn.textContent = '⏸';
+  pauseBtn.setAttribute('aria-label', 'Mettre en pause');
+}
+
+function buildCards(){
+  stage.innerHTML = '';
+  cards = [];
+  playlist.forEach(function(m, i){
+    var card = document.createElement('div');
+    card.className = 'card';
+    var el;
+    if(m.type === 'image'){
+      el = document.createElement('img');
+      el.alt = 'Souvenir ' + (i + 1);
+      el.src = m.url;
+    } else {
+      el = document.createElement('video');
+      el.muted = true; el.playsInline = true; el.loop = true; el.preload = 'auto';
+      el.src = m.url;
+      el.addEventListener('timeupdate', function(){
+        if(el.currentTime >= VIDEO_CAP) el.currentTime = 0;
+      });
+    }
+    card.appendChild(el);
+    card.addEventListener('click', function(){
+      if(i !== current){ goTo(i); resetAuto(); }
+    });
+    stage.appendChild(card);
+    cards.push({ root: card, el: el, type: m.type });
+  });
+}
+
+function circularOffset(i){
+  var n = playlist.length;
+  var d = i - current;
+  if(n > 1){
+    if(d > n / 2) d -= n;
+    if(d < -n / 2) d += n;
+  }
+  return d;
+}
+
+function applyTransforms(){
+  cards.forEach(function(c, i){
+    var d = circularOffset(i);
+    var abs = Math.abs(d);
+    var center = d === 0;
+    var rot = center ? 0 : (d < 0 ? 35 : -35);
+    var blur = Math.min(abs * 3, 7);
+    c.root.style.transform =
+      'translate(-50%,-50%) translateX(' + (d * 55) + '%) translateZ(' + (-abs * 220) + 'px)' +
+      ' rotateY(' + rot + 'deg) scale(' + (center ? 1 : 0.78) + ')';
+    c.root.style.filter = center ? 'none' : 'blur(' + blur + 'px) brightness(0.65)';
+    c.root.style.opacity = abs > 3 ? '0' : '1';
+    c.root.style.pointerEvents = abs > 3 ? 'none' : 'auto';
+    c.root.style.zIndex = String(100 - Math.round(abs));
+
+    if(c.type === 'video'){
+      if(center){
+        c.el.currentTime = 0;
+        var p = c.el.play();
+        if(p && p.catch) p.catch(function(){});
+      } else {
+        c.el.pause();
+      }
+    }
+  });
+}
+
+function goTo(i){
+  var n = playlist.length;
+  current = ((i % n) + n) % n;
+  applyTransforms();
+}
+
+function next(){ goTo(current + 1); }
+function prev(){ goTo(current - 1); }
+
+/* ---- Autoplay ---- */
+function startAuto(){
+  stopAuto();
+  if(playlist.length > 1 && playing) autoTimer = setInterval(next, SLIDE_MS);
+}
+function stopAuto(){
+  if(autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+}
+function resetAuto(){ startAuto(); }
+
+function togglePlay(){
+  playing = !playing;
+  pauseBtn.textContent = playing ? '⏸' : '▶';
+  pauseBtn.setAttribute('aria-label', playing ? 'Mettre en pause' : 'Reprendre la lecture');
+  if(playing) startAuto(); else stopAuto();
+}
+
+/* ---- Message animé ---- */
+function buildMessage(){
+  var text = msgInput.value.trim() || 'Bons baisers de Barcelone !';
+  var msgText = $('msgText');
+  msgText.classList.remove('pulse');
+  msgText.innerHTML = '';
+  Array.prototype.forEach.call(text, function(ch, i){
+    var s = document.createElement('span');
+    s.textContent = ch === ' ' ? ' ' : ch;
+    s.style.animationDelay = (i * 0.04) + 's';
+    msgText.appendChild(s);
+  });
+  setTimeout(function(){ msgText.classList.add('pulse'); }, text.length * 40 + 600);
+  var sender = senderInput.value.trim();
+  $('msgSender').textContent = sender ? '— ' + sender + ' 💛' : '';
+}
+
+/* ---- Sortie ---- */
+function exitPlayer(){
+  stopAuto();
+  stopConfetti();
+  cards.forEach(function(c){ if(c.type === 'video') c.el.pause(); });
+  stage.innerHTML = '';
+  cards = [];
+  player.classList.add('hidden');
+  editor.classList.remove('hidden');
+}
+
+/* ---- Contrôles / inactivité ---- */
+function wakeControls(){
+  player.classList.remove('idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(function(){ player.classList.add('idle'); }, 3000);
+}
+player.addEventListener('mousemove', wakeControls);
+player.addEventListener('touchstart', wakeControls, { passive: true });
+
+/* ---- Événements lecteur ---- */
+prevBtn.addEventListener('click', function(){ prev(); resetAuto(); });
+nextBtn.addEventListener('click', function(){ next(); resetAuto(); });
+pauseBtn.addEventListener('click', togglePlay);
+exitBtn.addEventListener('click', exitPlayer);
+
+document.addEventListener('keydown', function(e){
+  if(player.classList.contains('hidden')) return;
+  if(e.key === 'ArrowRight'){ next(); resetAuto(); wakeControls(); }
+  else if(e.key === 'ArrowLeft'){ prev(); resetAuto(); wakeControls(); }
+  else if(e.key === ' '){ e.preventDefault(); togglePlay(); wakeControls(); }
+  else if(e.key === 'Escape'){ exitPlayer(); }
+});
+
+/* ---- Swipe tactile ---- */
+var touchX = null;
+stage.addEventListener('touchstart', function(e){
+  if(e.touches.length === 1) touchX = e.touches[0].clientX;
+}, { passive: true });
+stage.addEventListener('touchend', function(e){
+  if(touchX === null) return;
+  var dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if(Math.abs(dx) > 40){
+    if(dx < 0) next(); else prev();
+    resetAuto();
+  }
+}, { passive: true });
+
+/* ---- Lancement ---- */
+launchBtn.addEventListener('click', function(){
+  if(media.length) launch(media.slice());
+});
+demoBtn.addEventListener('click', function(){
+  if(!msgInput.value.trim()) msgInput.value = '¡Hola Barcelona! ☀️';
+  launch(loadDemo());
+});
+
+/* ============ Confettis mosaïque ============ */
+var canvas = $('confettiCanvas');
+var ctx = canvas.getContext ? canvas.getContext('2d') : null;
+var particles = [];
+var COLORS = ['#1273b8', '#18a999', '#ffc93c', '#e4572e', '#ef6da0', '#ffffff'];
+
+function resizeCanvas(){
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+
+function makeParticle(fromTop){
+  return {
+    x: Math.random() * canvas.width,
+    y: fromTop ? -12 : Math.random() * canvas.height,
+    size: 5 + Math.random() * 7,
+    speed: 0.6 + Math.random() * 1.6,
+    drift: (Math.random() - 0.5) * 0.7,
+    rot: Math.random() * Math.PI,
+    rotSpeed: (Math.random() - 0.5) * 0.08,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)]
+  };
+}
+
+function startConfetti(){
+  if(!ctx) return;
+  resizeCanvas();
+  particles = [];
+  for(var i = 0; i < 70; i++) particles.push(makeParticle(false));
+  function tick(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(function(p, i){
+      p.y += p.speed; p.x += p.drift; p.rot += p.rotSpeed;
+      if(p.y > canvas.height + 14) particles[i] = makeParticle(true);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      ctx.restore();
+    });
+    confettiRAF = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function stopConfetti(){
+  if(confettiRAF){ cancelAnimationFrame(confettiRAF); confettiRAF = null; }
+  if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+</script>
+</body>
+</html>
