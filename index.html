@@ -119,7 +119,19 @@
     transition:transform .6s cubic-bezier(.22,1,.36,1),filter .6s,opacity .6s;
     will-change:transform,filter;cursor:pointer;
   }
-  .card img,.card video{width:100%;height:100%;object-fit:cover;display:block}
+  .card img,.card video{width:100%;height:100%;object-fit:cover;display:block;transition:filter .55s ease,transform .55s ease}
+
+  /* ---- Mode découverte : photo voilée jusqu'au clic ---- */
+  .card .revealHint{display:none}
+  .card.veiled{cursor:pointer}
+  .card.veiled img,.card.veiled video{filter:blur(26px) brightness(.75);transform:scale(1.08)}
+  .card.veiled .revealHint{
+    display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;
+    position:absolute;inset:0;text-align:center;color:#fff;font-weight:800;
+    font-size:1.05rem;line-height:1.4;padding:16px;
+    background:rgba(12,22,54,.28);text-shadow:0 2px 10px rgba(0,0,0,.65);
+  }
+  .card.veiled .revealHint .eye{font-size:2.4rem;animation:pulse 1.8s ease-in-out infinite}
 
   .navBtn{
     position:absolute;top:42%;transform:translateY(-50%);z-index:50;
@@ -192,10 +204,15 @@
   <p class="sub center"><span class="modeTag" id="modeTag">Mode local</span></p>
 
   <div class="panel hidden" id="sharePanel">
-    <h2>🔗 Lien de la carte — envoie-le aux autres !</h2>
+    <h2>🔗 Lien contributeurs — pour ceux qui ajoutent un souvenir</h2>
     <div class="linkBar">
-      <input type="text" id="shareLink" readonly aria-label="Lien de partage de la carte">
+      <input type="text" id="shareLink" readonly aria-label="Lien pour les contributeurs">
       <button class="ghost" id="copyBtn">Copier 📋</button>
+    </div>
+    <h2 class="gap">🎁 Lien destinataire — pour la personne qui découvre ses vœux</h2>
+    <div class="linkBar">
+      <input type="text" id="shareLinkView" readonly aria-label="Lien pour le destinataire">
+      <button class="ghost" id="copyViewBtn">Copier 📋</button>
     </div>
   </div>
 
@@ -274,7 +291,10 @@ var VIDEO_CAP = 5, SLIDE_MS = 5000, POLL_MS = 12000;
 
 /* ============ État ============ */
 var cardId = null;
-var contributions = [];   // {type,url,message,name,isDemo,localFile?}
+var VIEW = false;         // lien destinataire (?voir=1)
+var REVEAL = false;       // mode découverte actif dans le lecteur
+var revealedSet = {};     // slides déjà révélées
+var contributions = [];   // {id?,path?,type,url,message,name,isDemo}
 var pendingFile = null;   // {file,type,url}
 var current = 0, autoTimer = null, playing = true, idleTimer = null;
 var confettiRAF = null, pollTimer = null;
@@ -343,15 +363,33 @@ function sbList(cid){
     { headers: sbHeaders() })
     .then(function(r){ if(!r.ok) throw new Error('list ' + r.status); return r.json(); });
 }
+function sbDelete(item){
+  return fetch(SUPABASE_URL + '/rest/v1/' + TABLE + '?id=eq.' + encodeURIComponent(item.id),
+    { method: 'DELETE', headers: sbHeaders() })
+    .then(function(r){
+      if(!r.ok) throw new Error('delete ' + r.status);
+      // Nettoyage du fichier (best effort)
+      return fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + item.path,
+        { method: 'DELETE', headers: sbHeaders() }).catch(function(){});
+    });
+}
+function rowToItem(r){
+  return { id: r.id, path: r.media_path, type: r.media_type, url: sbPublicUrl(r.media_path),
+           message: r.message, name: r.name, isDemo: false };
+}
 
 /* ============ Routage initial ============ */
 function init(){
   var params = new URLSearchParams(location.search);
   var pCard = params.get('card');
+  VIEW = params.get('voir') !== null;
   $('modeTag').textContent = CLOUD ? '☁️ Carte partagée en ligne' : '💻 Mode local (Supabase non configuré)';
   if(CLOUD) $('modeTag').classList.add('cloud');
 
-  if(CLOUD && !pCard){
+  if(CLOUD && pCard && VIEW){
+    cardId = pCard;
+    openViewer();
+  } else if(CLOUD && !pCard){
     home.classList.remove('hidden');
   } else {
     cardId = pCard || uuid();
@@ -363,10 +401,25 @@ function openContrib(){
   contrib.classList.remove('hidden');
   if(CLOUD){
     $('sharePanel').classList.remove('hidden');
-    var link = location.origin + location.pathname + '?card=' + cardId;
-    $('shareLink').value = link;
+    var base = location.origin + location.pathname + '?card=' + cardId;
+    $('shareLink').value = base;
+    $('shareLinkView').value = base + '&voir=1';
     refreshCloudList();
   }
+}
+function openViewer(){
+  openContrib(); // prépare l'écran de secours (liens, galerie) pour la sortie du lecteur
+  sbList(cardId).then(function(rows){
+    contributions = rows.map(rowToItem);
+    renderLocalList();
+    if(!contributions.length){
+      toast('Cette carte est encore vide 🕊️');
+      return;
+    }
+    launch(contributions.slice(), true);
+  }).catch(function(){
+    toast('Impossible de charger la carte 📡');
+  });
 }
 $('createCardBtn').addEventListener('click', function(){
   cardId = uuid();
@@ -375,14 +428,18 @@ $('createCardBtn').addEventListener('click', function(){
   openContrib();
   toast('Carte créée ! Partage le lien 🔗', true);
 });
-$('copyBtn').addEventListener('click', function(){
-  var inp = $('shareLink');
-  inp.select();
-  var done = function(){ toast('Lien copié ! 📋', true); };
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(inp.value).then(done, function(){ document.execCommand('copy'); done(); });
-  } else { document.execCommand('copy'); done(); }
-});
+function wireCopy(btnId, inputId, label){
+  $(btnId).addEventListener('click', function(){
+    var inp = $(inputId);
+    inp.select();
+    var done = function(){ toast(label + ' copié ! 📋', true); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(inp.value).then(done, function(){ document.execCommand('copy'); done(); });
+    } else { document.execCommand('copy'); done(); }
+  });
+}
+wireCopy('copyBtn', 'shareLink', 'Lien contributeurs');
+wireCopy('copyViewBtn', 'shareLinkView', 'Lien destinataire');
 
 /* ============ Sélection du média ============ */
 function setPendingFile(f){
@@ -504,15 +561,27 @@ function renderLocalList(){
     meta.querySelector('strong').textContent = c.name;
     meta.appendChild(document.createTextNode('« ' + c.message + ' »'));
     d.appendChild(meta);
-    if(!CLOUD && !c.isDemo){
+    if(!c.isDemo){
       var del = document.createElement('button');
       del.className = 'del';
       del.textContent = 'Supprimer 🗑';
       del.setAttribute('aria-label', 'Supprimer la contribution de ' + c.name);
       del.addEventListener('click', function(){
-        URL.revokeObjectURL(c.url);
-        contributions.splice(i, 1);
-        renderLocalList();
+        if(!window.confirm('Supprimer le souvenir de ' + c.name + ' ?')) return;
+        if(CLOUD){
+          del.disabled = true;
+          sbDelete(c).then(function(){
+            toast('Souvenir supprimé 🗑', true);
+            refreshCloudList();
+          }).catch(function(){
+            del.disabled = false;
+            toast('Suppression impossible 📡');
+          });
+        } else {
+          URL.revokeObjectURL(c.url);
+          contributions.splice(i, 1);
+          renderLocalList();
+        }
       });
       d.appendChild(del);
     }
@@ -523,9 +592,7 @@ function renderLocalList(){
 function refreshCloudList(){
   if(!CLOUD || !cardId) return;
   sbList(cardId).then(function(rows){
-    contributions = rows.map(function(r){
-      return { type: r.media_type, url: sbPublicUrl(r.media_path), message: r.message, name: r.name, isDemo: false };
-    });
+    contributions = rows.map(rowToItem);
     renderLocalList();
   }).catch(function(){ /* silencieux : réessaiera */ });
 }
@@ -552,8 +619,10 @@ function loadDemo(){
 }
 
 /* ============ Lecteur coverflow ============ */
-function launch(list){
+function launch(list, reveal){
   if(!list.length){ toast('Ajoute au moins une photo avant de lancer 😉'); return; }
+  REVEAL = !!reveal;
+  revealedSet = {};
   playlist = list;
   current = 0;
   playing = true;
@@ -569,6 +638,7 @@ function launch(list){
   var single = playlist.length <= 1;
   prevBtn.classList.toggle('hidden', single);
   nextBtn.classList.toggle('hidden', single);
+  pauseBtn.classList.toggle('hidden', REVEAL); // pas d'autoplay en mode découverte
   pauseBtn.textContent = '⏸';
   pauseBtn.setAttribute('aria-label', 'Mettre en pause');
   if(CLOUD && !list[0].isDemo){
@@ -576,9 +646,7 @@ function launch(list){
       sbList(cardId).then(function(rows){
         if(rows.length > playlist.length){
           var keep = current;
-          playlist = rows.map(function(r){
-            return { type:r.media_type, url:sbPublicUrl(r.media_path), message:r.message, name:r.name, isDemo:false };
-          });
+          playlist = rows.map(rowToItem);
           buildCards();
           current = Math.min(keep, playlist.length - 1);
           applyTransforms();
@@ -610,8 +678,14 @@ function buildCards(){
       });
     }
     card.appendChild(el);
+    var hint = document.createElement('div');
+    hint.className = 'revealHint';
+    hint.innerHTML = '<span class="eye">👀</span>Lis le message…<br>puis clique pour découvrir la photo';
+    card.appendChild(hint);
     card.addEventListener('click', function(){
-      if(i !== current){ goTo(i); resetAuto(); }
+      if(i === current){
+        if(REVEAL && !revealedSet[i]){ revealedSet[i] = true; applyTransforms(); }
+      } else { goTo(i); resetAuto(); }
     });
     stage.appendChild(card);
     cards.push({ root: card, el: el, type: m.type });
@@ -642,8 +716,10 @@ function applyTransforms(){
     c.root.style.opacity = abs > 3 ? '0' : '1';
     c.root.style.pointerEvents = abs > 3 ? 'none' : 'auto';
     c.root.style.zIndex = String(100 - Math.round(abs));
+    var unveiled = !REVEAL || !!revealedSet[i];
+    c.root.classList.toggle('veiled', center && !unveiled);
     if(c.type === 'video'){
-      if(center){
+      if(center && unveiled){
         c.el.currentTime = 0;
         var p = c.el.play();
         if(p && p.catch) p.catch(function(){});
@@ -682,6 +758,7 @@ function prev(){ goTo(current - 1); }
 
 function startAuto(){
   stopAuto();
+  if(REVEAL) return; // en mode découverte, on avance à la main
   if(playlist.length > 1 && playing) autoTimer = setInterval(next, SLIDE_MS);
 }
 function stopAuto(){ if(autoTimer){ clearInterval(autoTimer); autoTimer = null; } }
@@ -745,9 +822,7 @@ viewBtn.addEventListener('click', function(){
   if(CLOUD){
     viewBtn.disabled = true;
     sbList(cardId).then(function(rows){
-      contributions = rows.map(function(r){
-        return { type:r.media_type, url:sbPublicUrl(r.media_path), message:r.message, name:r.name, isDemo:false };
-      });
+      contributions = rows.map(rowToItem);
       renderLocalList();
       launch(contributions.slice());
     }).catch(function(){
