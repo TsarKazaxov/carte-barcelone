@@ -21,6 +21,17 @@
   button{font-family:inherit;cursor:pointer;border:none}
   button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
 
+  #langSwitch{position:fixed;top:14px;right:14px;z-index:80}
+  #langSwitch select{
+    appearance:none;-webkit-appearance:none;
+    background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:.9rem;
+    border:2px solid rgba(255,255,255,.35);border-radius:999px;padding:8px 30px 8px 14px;cursor:pointer;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23ffffff'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  #langSwitch select:hover{background-color:rgba(255,255,255,.24)}
+  #langSwitch option{color:#1a1a2e}
+
   .skyline{position:fixed;left:0;right:0;bottom:0;pointer-events:none;opacity:.35;z-index:0}
   .skyline svg{display:block;width:100%;height:22vh;min-height:120px}
 
@@ -175,6 +186,16 @@
 </head>
 <body>
 
+<div id="langSwitch">
+  <select id="langSel" aria-label="Langue / Language">
+    <option value="fr">🇫🇷 Français</option>
+    <option value="en">🇬🇧 English</option>
+    <option value="es">🇪🇸 Español</option>
+    <option value="tr">🇹🇷 Türkçe</option>
+    <option value="it">🇮🇹 Italiano</option>
+  </select>
+</div>
+
 <div class="skyline" aria-hidden="true">
   <svg viewBox="0 0 1200 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
     <path fill="#000" d="M0,200 L0,150 L40,150 L40,120 L60,120 L60,150 L110,150 L110,100 L130,100 L130,150 L180,150 L180,130 L230,130 L230,150 L280,150
@@ -191,8 +212,8 @@
 
 <!-- ============ ACCUEIL (mode cloud, sans carte) ============ -->
 <main id="home" class="hidden">
-  <h1>Carte collective de Barcelone 🎉</h1>
-  <p class="sub">Crée une carte, partage le lien : chacun ajoute sa photo et son message, où qu'il soit dans le monde 🌍</p>
+  <h1 id="homeTitle">Carte collective de Barcelone 🎉</h1>
+  <p class="sub" id="homeSub">Crée une carte, partage le lien : chacun ajoute sa photo et son message, où qu'il soit dans le monde 🌍</p>
   <div class="center">
     <button class="cta" id="createCardBtn">Créer une nouvelle carte ✨</button>
   </div>
@@ -200,16 +221,16 @@
 
 <!-- ============ CONTRIBUTION ============ -->
 <main id="contrib" class="hidden">
-  <h1>Ajoute ton souvenir 🎉</h1>
+  <h1 id="contribTitle">Ajoute ton souvenir 🎉</h1>
   <p class="sub center"><span class="modeTag" id="modeTag">Mode local</span></p>
 
   <div class="panel hidden" id="sharePanel">
-    <h2>🔗 Lien contributeurs — pour ceux qui ajoutent un souvenir</h2>
+    <h2 id="shareTitle1">🔗 Lien contributeurs — pour ceux qui ajoutent un souvenir</h2>
     <div class="linkBar">
       <input type="text" id="shareLink" readonly aria-label="Lien pour les contributeurs">
       <button class="ghost" id="copyBtn">Copier 📋</button>
     </div>
-    <h2 class="gap">🎁 Lien destinataire — pour la personne qui découvre ses vœux</h2>
+    <h2 class="gap" id="shareTitle2">🎁 Lien destinataire — pour la personne qui découvre ses vœux</h2>
     <div class="linkBar">
       <input type="text" id="shareLinkView" readonly aria-label="Lien pour le destinataire">
       <button class="ghost" id="copyViewBtn">Copier 📋</button>
@@ -217,23 +238,23 @@
   </div>
 
   <div class="panel">
-    <h2>✍️ Ta contribution — 1 photo/vidéo = 1 message</h2>
-    <label for="nameInput">Ton prénom</label>
+    <h2 id="formTitle">✍️ Ta contribution — 1 photo/vidéo = 1 message</h2>
+    <label for="nameInput" id="nameLabel">Ton prénom</label>
     <input type="text" id="nameInput" maxlength="40" placeholder="Anton">
 
     <div class="gap">
-      <label>Ta photo ou ta mini-vidéo (5&nbsp;s)</label>
+      <label id="mediaLabel">Ta photo ou ta mini-vidéo (5&nbsp;s)</label>
       <div id="dropzone" role="button" tabindex="0" aria-label="Ajouter une photo ou une vidéo">
         <div class="big">📸 🎬</div>
-        <p><strong>Glisse ton fichier ici</strong> ou clique pour choisir</p>
-        <small>Les vidéos jouent en boucle sur leurs 5 premières secondes, sans le son</small>
+        <p id="dzMain"><strong>Glisse ton fichier ici</strong> ou clique pour choisir</p>
+        <small id="dzHint">Les vidéos jouent en boucle sur leurs 5 premières secondes, sans le son</small>
       </div>
       <input type="file" id="fileInput" accept="image/*,video/*" hidden>
       <div id="mediaPreview" aria-live="polite"></div>
     </div>
 
     <div class="gap">
-      <label for="msgInput">Ton message pour cette photo</label>
+      <label for="msgInput" id="msgLabel">Ton message pour cette photo</label>
       <input type="text" id="msgInput" maxlength="90" placeholder="¡Feliz cumpleaños! ☀️">
       <div class="count"><span id="msgCount">0</span>/90</div>
     </div>
@@ -244,7 +265,7 @@
   </div>
 
   <div class="panel" id="localPanel">
-    <h2>🖼️ Contributions sur cette carte</h2>
+    <h2 id="galleryTitle">🖼️ Contributions sur cette carte</h2>
     <p id="emptyHint" style="color:#9fc3e8">Aucune contribution pour l'instant — sois la première personne&nbsp;!</p>
     <div id="localList"></div>
   </div>
@@ -288,6 +309,177 @@ var TABLE = 'contributions';
 
 var CLOUD = /^https:\/\//.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 20;
 var VIDEO_CAP = 5, SLIDE_MS = 5000, POLL_MS = 12000;
+
+/* ============ Traductions ============ */
+var STR = {
+  fr: {
+    homeTitle: 'Carte collective de Barcelone 🎉',
+    homeSub: 'Crée une carte, partage le lien : chacun ajoute sa photo et son message, où qu’il soit dans le monde 🌍',
+    createBtn: 'Créer une nouvelle carte ✨',
+    contribTitle: 'Ajoute ton souvenir 🎉',
+    modeCloud: '☁️ Carte partagée en ligne', modeLocal: '💻 Mode local (Supabase non configuré)',
+    shareTitle1: '🔗 Lien contributeurs — pour ceux qui ajoutent un souvenir',
+    shareTitle2: '🎁 Lien destinataire — pour la personne qui découvre ses vœux',
+    copy: 'Copier 📋',
+    formTitle: '✍️ Ta contribution — 1 photo/vidéo = 1 message',
+    nameLabel: 'Ton prénom',
+    mediaLabel: 'Ta photo ou ta mini-vidéo (5 s)',
+    dzMain: '<strong>Glisse ton fichier ici</strong> ou clique pour choisir',
+    dzHint: 'Les vidéos jouent en boucle sur leurs 5 premières secondes, sans le son',
+    msgLabel: 'Ton message pour cette photo',
+    submit: 'Ajouter à la carte 🎁', sending: 'Envoi… ⏳',
+    galleryTitle: '🖼️ Contributions sur cette carte',
+    emptyHint: 'Aucune contribution pour l’instant — sois la première personne !',
+    viewBtn: 'Voir la carte 🎬', demoBtn: 'Voir une démo 🏖️', delBtn: 'Supprimer 🗑',
+    confirmDelete: 'Supprimer le souvenir de {name} ?',
+    revealHint: 'Lis le message…<br>puis clique pour découvrir la photo',
+    tCardCreated: 'Carte créée ! Partage le lien 🔗', tLinkCopied: 'Lien copié ! 📋',
+    tSent: 'Ta contribution est sur la carte ! 🎉', tSendErr: 'Oups, envoi impossible. Vérifie ta connexion 📡',
+    tDeleted: 'Souvenir supprimé 🗑', tDelErr: 'Suppression impossible 📡',
+    tOnlyMedia: 'Photos et vidéos uniquement 🙈', tTooBig: 'Fichier trop lourd (max 45 Mo) 🐘',
+    tNeedOne: 'Ajoute au moins une photo avant de lancer 😉', tEmptyCard: 'Cette carte est encore vide 🕊️',
+    tLoadErr: 'Impossible de charger la carte 📡', tNew: 'Nouveau souvenir reçu ! 💌'
+  },
+  en: {
+    homeTitle: 'Collective Barcelona Card 🎉',
+    homeSub: 'Create a card and share the link: everyone adds their photo and message, wherever they are in the world 🌍',
+    createBtn: 'Create a new card ✨',
+    contribTitle: 'Add your memory 🎉',
+    modeCloud: '☁️ Shared online card', modeLocal: '💻 Local mode (Supabase not configured)',
+    shareTitle1: '🔗 Contributor link — for those adding a memory',
+    shareTitle2: '🎁 Recipient link — for the person discovering their wishes',
+    copy: 'Copy 📋',
+    formTitle: '✍️ Your contribution — 1 photo/video = 1 message',
+    nameLabel: 'Your first name',
+    mediaLabel: 'Your photo or mini-video (5 s)',
+    dzMain: '<strong>Drag your file here</strong> or click to choose',
+    dzHint: 'Videos loop over their first 5 seconds, muted',
+    msgLabel: 'Your message for this photo',
+    submit: 'Add to the card 🎁', sending: 'Sending… ⏳',
+    galleryTitle: '🖼️ Contributions on this card',
+    emptyHint: 'No contributions yet — be the first!',
+    viewBtn: 'View the card 🎬', demoBtn: 'See a demo 🏖️', delBtn: 'Delete 🗑',
+    confirmDelete: 'Delete {name}’s memory?',
+    revealHint: 'Read the message…<br>then click to reveal the photo',
+    tCardCreated: 'Card created! Share the link 🔗', tLinkCopied: 'Link copied! 📋',
+    tSent: 'Your contribution is on the card! 🎉', tSendErr: 'Oops, upload failed. Check your connection 📡',
+    tDeleted: 'Memory deleted 🗑', tDelErr: 'Couldn’t delete 📡',
+    tOnlyMedia: 'Photos and videos only 🙈', tTooBig: 'File too large (max 45 MB) 🐘',
+    tNeedOne: 'Add at least one photo first 😉', tEmptyCard: 'This card is still empty 🕊️',
+    tLoadErr: 'Couldn’t load the card 📡', tNew: 'New memory received! 💌'
+  },
+  es: {
+    homeTitle: 'Tarjeta colectiva de Barcelona 🎉',
+    homeSub: 'Crea una tarjeta y comparte el enlace: cada uno añade su foto y su mensaje, desde cualquier lugar del mundo 🌍',
+    createBtn: 'Crear una nueva tarjeta ✨',
+    contribTitle: 'Añade tu recuerdo 🎉',
+    modeCloud: '☁️ Tarjeta compartida en línea', modeLocal: '💻 Modo local (Supabase sin configurar)',
+    shareTitle1: '🔗 Enlace de colaboradores — para quienes añaden un recuerdo',
+    shareTitle2: '🎁 Enlace del destinatario — para quien descubre sus deseos',
+    copy: 'Copiar 📋',
+    formTitle: '✍️ Tu aportación — 1 foto/vídeo = 1 mensaje',
+    nameLabel: 'Tu nombre',
+    mediaLabel: 'Tu foto o mini-vídeo (5 s)',
+    dzMain: '<strong>Arrastra tu archivo aquí</strong> o haz clic para elegir',
+    dzHint: 'Los vídeos se reproducen en bucle sus primeros 5 segundos, sin sonido',
+    msgLabel: 'Tu mensaje para esta foto',
+    submit: 'Añadir a la tarjeta 🎁', sending: 'Enviando… ⏳',
+    galleryTitle: '🖼️ Aportaciones en esta tarjeta',
+    emptyHint: 'Todavía no hay aportaciones — ¡sé la primera persona!',
+    viewBtn: 'Ver la tarjeta 🎬', demoBtn: 'Ver una demo 🏖️', delBtn: 'Eliminar 🗑',
+    confirmDelete: '¿Eliminar el recuerdo de {name}?',
+    revealHint: 'Lee el mensaje…<br>y haz clic para descubrir la foto',
+    tCardCreated: '¡Tarjeta creada! Comparte el enlace 🔗', tLinkCopied: '¡Enlace copiado! 📋',
+    tSent: '¡Tu aportación está en la tarjeta! 🎉', tSendErr: 'Ups, no se pudo enviar. Revisa tu conexión 📡',
+    tDeleted: 'Recuerdo eliminado 🗑', tDelErr: 'No se pudo eliminar 📡',
+    tOnlyMedia: 'Solo fotos y vídeos 🙈', tTooBig: 'Archivo demasiado grande (máx. 45 MB) 🐘',
+    tNeedOne: 'Añade al menos una foto antes de empezar 😉', tEmptyCard: 'Esta tarjeta aún está vacía 🕊️',
+    tLoadErr: 'No se pudo cargar la tarjeta 📡', tNew: '¡Nuevo recuerdo recibido! 💌'
+  },
+  tr: {
+    homeTitle: 'Barselona ortak kartı 🎉',
+    homeSub: 'Bir kart oluştur ve bağlantıyı paylaş: herkes dünyanın neresinde olursa olsun fotoğrafını ve mesajını ekler 🌍',
+    createBtn: 'Yeni bir kart oluştur ✨',
+    contribTitle: 'Anını ekle 🎉',
+    modeCloud: '☁️ Çevrimiçi paylaşılan kart', modeLocal: '💻 Yerel mod (Supabase yapılandırılmadı)',
+    shareTitle1: '🔗 Katkı bağlantısı — anı ekleyecekler için',
+    shareTitle2: '🎁 Alıcı bağlantısı — dilekleri keşfedecek kişi için',
+    copy: 'Kopyala 📋',
+    formTitle: '✍️ Katkın — 1 fotoğraf/video = 1 mesaj',
+    nameLabel: 'Adın',
+    mediaLabel: 'Fotoğrafın veya mini videon (5 sn)',
+    dzMain: '<strong>Dosyanı buraya sürükle</strong> veya seçmek için tıkla',
+    dzHint: 'Videolar ilk 5 saniyesinde sessiz olarak döngüde oynar',
+    msgLabel: 'Bu fotoğraf için mesajın',
+    submit: 'Karta ekle 🎁', sending: 'Gönderiliyor… ⏳',
+    galleryTitle: '🖼️ Bu karttaki katkılar',
+    emptyHint: 'Henüz katkı yok — ilk sen ol!',
+    viewBtn: 'Kartı görüntüle 🎬', demoBtn: 'Demoyu gör 🏖️', delBtn: 'Sil 🗑',
+    confirmDelete: '{name} adlı kişinin anısı silinsin mi?',
+    revealHint: 'Mesajı oku…<br>sonra fotoğrafı görmek için tıkla',
+    tCardCreated: 'Kart oluşturuldu! Bağlantıyı paylaş 🔗', tLinkCopied: 'Bağlantı kopyalandı! 📋',
+    tSent: 'Katkın kartta! 🎉', tSendErr: 'Hata! Gönderilemedi. Bağlantını kontrol et 📡',
+    tDeleted: 'Anı silindi 🗑', tDelErr: 'Silinemedi 📡',
+    tOnlyMedia: 'Sadece fotoğraf ve video 🙈', tTooBig: 'Dosya çok büyük (en fazla 45 MB) 🐘',
+    tNeedOne: 'Başlamadan önce en az bir fotoğraf ekle 😉', tEmptyCard: 'Bu kart henüz boş 🕊️',
+    tLoadErr: 'Kart yüklenemedi 📡', tNew: 'Yeni anı geldi! 💌'
+  },
+  it: {
+    homeTitle: 'Cartolina collettiva di Barcellona 🎉',
+    homeSub: 'Crea una cartolina e condividi il link: ognuno aggiunge la sua foto e il suo messaggio, ovunque si trovi nel mondo 🌍',
+    createBtn: 'Crea una nuova cartolina ✨',
+    contribTitle: 'Aggiungi il tuo ricordo 🎉',
+    modeCloud: '☁️ Cartolina condivisa online', modeLocal: '💻 Modalità locale (Supabase non configurato)',
+    shareTitle1: '🔗 Link per i contributori — per chi aggiunge un ricordo',
+    shareTitle2: '🎁 Link per il destinatario — per chi scopre gli auguri',
+    copy: 'Copia 📋',
+    formTitle: '✍️ Il tuo contributo — 1 foto/video = 1 messaggio',
+    nameLabel: 'Il tuo nome',
+    mediaLabel: 'La tua foto o mini-video (5 s)',
+    dzMain: '<strong>Trascina il tuo file qui</strong> o clicca per scegliere',
+    dzHint: 'I video vengono riprodotti in loop sui primi 5 secondi, senza audio',
+    msgLabel: 'Il tuo messaggio per questa foto',
+    submit: 'Aggiungi alla cartolina 🎁', sending: 'Invio… ⏳',
+    galleryTitle: '🖼️ Contributi su questa cartolina',
+    emptyHint: 'Ancora nessun contributo — sii il primo!',
+    viewBtn: 'Guarda la cartolina 🎬', demoBtn: 'Vedi una demo 🏖️', delBtn: 'Elimina 🗑',
+    confirmDelete: 'Eliminare il ricordo di {name}?',
+    revealHint: 'Leggi il messaggio…<br>poi clicca per scoprire la foto',
+    tCardCreated: 'Cartolina creata! Condividi il link 🔗', tLinkCopied: 'Link copiato! 📋',
+    tSent: 'Il tuo contributo è sulla cartolina! 🎉', tSendErr: 'Ops, invio non riuscito. Controlla la connessione 📡',
+    tDeleted: 'Ricordo eliminato 🗑', tDelErr: 'Eliminazione non riuscita 📡',
+    tOnlyMedia: 'Solo foto e video 🙈', tTooBig: 'File troppo grande (max 45 MB) 🐘',
+    tNeedOne: 'Aggiungi almeno una foto prima di iniziare 😉', tEmptyCard: 'Questa cartolina è ancora vuota 🕊️',
+    tLoadErr: 'Impossibile caricare la cartolina 📡', tNew: 'Nuovo ricordo ricevuto! 💌'
+  }
+};
+var LANG = 'fr';
+function t(key){ return (STR[LANG] && STR[LANG][key]) || STR.fr[key] || key; }
+function detectLang(){
+  try {
+    var p = new URLSearchParams(location.search).get('lang');
+    if(p && STR[p]) return p;
+    var saved = window.localStorage ? localStorage.getItem('bcnLang') : null;
+    if(saved && STR[saved]) return saved;
+  } catch(e){}
+  var nav = (navigator.language || 'fr').slice(0, 2).toLowerCase();
+  return STR[nav] ? nav : 'fr';
+}
+function applyLang(){
+  document.documentElement.lang = LANG;
+  var ids = ['homeTitle','homeSub','contribTitle','shareTitle1','shareTitle2','formTitle',
+             'nameLabel','mediaLabel','dzHint','msgLabel','galleryTitle','emptyHint'];
+  ids.forEach(function(id){ var el = document.getElementById(id); if(el) el.textContent = t(id); });
+  document.getElementById('dzMain').innerHTML = t('dzMain');
+  document.getElementById('createCardBtn').textContent = t('createBtn');
+  document.getElementById('copyBtn').textContent = t('copy');
+  document.getElementById('copyViewBtn').textContent = t('copy');
+  document.getElementById('submitBtn').textContent = t('submit');
+  document.getElementById('viewBtn').textContent = t('viewBtn');
+  document.getElementById('demoBtn').textContent = t('demoBtn');
+  var tag = document.getElementById('modeTag');
+  tag.textContent = CLOUD ? t('modeCloud') : t('modeLocal');
+}
 
 /* ============ État ============ */
 var cardId = null;
@@ -383,7 +575,9 @@ function init(){
   var params = new URLSearchParams(location.search);
   var pCard = params.get('card');
   VIEW = params.get('voir') !== null;
-  $('modeTag').textContent = CLOUD ? '☁️ Carte partagée en ligne' : '💻 Mode local (Supabase non configuré)';
+  LANG = detectLang();
+  $('langSel').value = LANG;
+  applyLang();
   if(CLOUD) $('modeTag').classList.add('cloud');
 
   if(CLOUD && pCard && VIEW){
@@ -413,12 +607,12 @@ function openViewer(){
     contributions = rows.map(rowToItem);
     renderLocalList();
     if(!contributions.length){
-      toast('Cette carte est encore vide 🕊️');
+      toast(t('tEmptyCard'));
       return;
     }
     launch(contributions.slice(), true);
   }).catch(function(){
-    toast('Impossible de charger la carte 📡');
+    toast(t('tLoadErr'));
   });
 }
 $('createCardBtn').addEventListener('click', function(){
@@ -426,26 +620,32 @@ $('createCardBtn').addEventListener('click', function(){
   var url = location.pathname + '?card=' + cardId;
   if(history.replaceState) history.replaceState(null, '', url);
   openContrib();
-  toast('Carte créée ! Partage le lien 🔗', true);
+  toast(t('tCardCreated'), true);
 });
-function wireCopy(btnId, inputId, label){
+$('langSel').addEventListener('change', function(){
+  LANG = $('langSel').value;
+  try { if(window.localStorage) localStorage.setItem('bcnLang', LANG); } catch(e){}
+  applyLang();
+  renderLocalList();
+});
+function wireCopy(btnId, inputId){
   $(btnId).addEventListener('click', function(){
     var inp = $(inputId);
     inp.select();
-    var done = function(){ toast(label + ' copié ! 📋', true); };
+    var done = function(){ toast(t('tLinkCopied'), true); };
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(inp.value).then(done, function(){ document.execCommand('copy'); done(); });
     } else { document.execCommand('copy'); done(); }
   });
 }
-wireCopy('copyBtn', 'shareLink', 'Lien contributeurs');
-wireCopy('copyViewBtn', 'shareLinkView', 'Lien destinataire');
+wireCopy('copyBtn', 'shareLink');
+wireCopy('copyViewBtn', 'shareLinkView');
 
 /* ============ Sélection du média ============ */
 function setPendingFile(f){
   var kind = fileKind(f);
-  if(!kind){ toast('Photos et vidéos uniquement 🙈'); return; }
-  if(f.size > 45 * 1024 * 1024){ toast('Fichier trop lourd (max 45 Mo) 🐘'); return; }
+  if(!kind){ toast(t('tOnlyMedia')); return; }
+  if(f.size > 45 * 1024 * 1024){ toast(t('tTooBig')); return; }
   if(pendingFile) URL.revokeObjectURL(pendingFile.url);
   pendingFile = { file: f, type: kind, url: URL.createObjectURL(f) };
   mediaPreview.innerHTML = '';
@@ -502,7 +702,7 @@ submitBtn.addEventListener('click', function(){
   };
   if(CLOUD){
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Envoi… ⏳';
+    submitBtn.textContent = t('sending');
     var ext = (pendingFile.file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
     var path = cardId + '/' + uuid() + '.' + ext;
     sbUpload(path, pendingFile.file)
@@ -513,22 +713,22 @@ submitBtn.addEventListener('click', function(){
         });
       })
       .then(function(){
-        toast('Ta contribution est sur la carte ! 🎉', true);
+        toast(t('tSent'), true);
         resetForm();
         refreshCloudList();
       })
       .catch(function(){
-        toast('Oups, envoi impossible. Vérifie ta connexion 📡');
+        toast(t('tSendErr'));
       })
       .then(function(){
-        submitBtn.textContent = 'Ajouter à la carte 🎁';
+        submitBtn.textContent = t('submit');
         updateSubmit();
       });
   } else {
     entry.url = pendingFile.url;   // on garde l'objectURL en local
     pendingFile = null;            // ne pas révoquer : utilisé par la carte
     contributions.push(entry);
-    toast('Ajouté à la carte ! 🎉', true);
+    toast(t('tSent'), true);
     resetForm();
     renderLocalList();
   }
@@ -564,18 +764,18 @@ function renderLocalList(){
     if(!c.isDemo){
       var del = document.createElement('button');
       del.className = 'del';
-      del.textContent = 'Supprimer 🗑';
-      del.setAttribute('aria-label', 'Supprimer la contribution de ' + c.name);
+      del.textContent = t('delBtn');
+      del.setAttribute('aria-label', t('confirmDelete').replace('{name}', c.name));
       del.addEventListener('click', function(){
-        if(!window.confirm('Supprimer le souvenir de ' + c.name + ' ?')) return;
+        if(!window.confirm(t('confirmDelete').replace('{name}', c.name))) return;
         if(CLOUD){
           del.disabled = true;
           sbDelete(c).then(function(){
-            toast('Souvenir supprimé 🗑', true);
+            toast(t('tDeleted'), true);
             refreshCloudList();
           }).catch(function(){
             del.disabled = false;
-            toast('Suppression impossible 📡');
+            toast(t('tDelErr'));
           });
         } else {
           URL.revokeObjectURL(c.url);
@@ -620,7 +820,8 @@ function loadDemo(){
 
 /* ============ Lecteur coverflow ============ */
 function launch(list, reveal){
-  if(!list.length){ toast('Ajoute au moins une photo avant de lancer 😉'); return; }
+  if(!list.length){ toast(t('tNeedOne')); return; }
+  $('langSwitch').classList.add('hidden');
   REVEAL = !!reveal;
   revealedSet = {};
   playlist = list;
@@ -651,7 +852,7 @@ function launch(list, reveal){
           current = Math.min(keep, playlist.length - 1);
           applyTransforms();
           updateBanner();
-          toast('Nouveau souvenir reçu ! 💌', true);
+          toast(t('tNew'), true);
         }
       }).catch(function(){});
     }, POLL_MS);
@@ -680,7 +881,7 @@ function buildCards(){
     card.appendChild(el);
     var hint = document.createElement('div');
     hint.className = 'revealHint';
-    hint.innerHTML = '<span class="eye">👀</span>Lis le message…<br>puis clique pour découvrir la photo';
+    hint.innerHTML = '<span class="eye">👀</span>' + t('revealHint');
     card.appendChild(hint);
     card.addEventListener('click', function(){
       if(i === current){
@@ -780,6 +981,7 @@ function exitPlayer(){
   cards = [];
   player.classList.add('hidden');
   contrib.classList.remove('hidden');
+  $('langSwitch').classList.remove('hidden');
 }
 
 /* ---- Contrôles / inactivité ---- */
@@ -826,7 +1028,7 @@ viewBtn.addEventListener('click', function(){
       renderLocalList();
       launch(contributions.slice());
     }).catch(function(){
-      toast('Impossible de charger la carte 📡');
+      toast(t('tLoadErr'));
     }).then(function(){ viewBtn.disabled = false; });
   } else {
     launch(contributions.slice());
